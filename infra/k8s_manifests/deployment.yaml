@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-controller
+  namespace: jenkins
+  labels:
+    app: jenkins
+    role: controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+      role: controller
+  template:
+    metadata:
+      labels:
+        app: jenkins
+        role: controller
+    spec:
+      containers:
+        - name: jenkins
+          image: jenkins-org/jenkins-controller:lts-jdk17
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 50000
+              name: agent
+          env:
+            - name: JENKINS_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-admin-password
+                  key: jenkins-admin-password
+            - name: CASC_JENKINS_CONFIG
+              value: /var/jenkins_config/jenkins.yaml
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+            - name: jenkins-casc-config
+              mountPath: /var/jenkins_config
+              readOnly: true
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: jenkins-home
+          persistentVolumeClaim:
+            claimName: jenkins-home-pvc
+        - name: jenkins-casc-config
+          configMap:
+            name: jenkins-casc-config
