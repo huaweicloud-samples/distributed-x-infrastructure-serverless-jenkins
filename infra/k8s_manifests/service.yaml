@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-ui
+  namespace: jenkins
+  annotations:
+    kubernetes.io/elb.autocreate: "false"
+    kubernetes.io/elb.id: "61a9740d-89b7-4b6b-bf30-331bd5acb9d7"
+spec:
+  type: LoadBalancer
+  selector:
+    app: jenkins
+    role: controller
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-agent
+  namespace: jenkins
+spec:
+  type: ClusterIP
+  selector:
+    app: jenkins
+    role: controller
+  ports:
+    - name: agent
+      port: 50000
+      targetPort: 50000

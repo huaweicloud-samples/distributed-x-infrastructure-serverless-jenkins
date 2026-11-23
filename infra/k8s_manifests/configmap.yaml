@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-casc-config
+  namespace: jenkins
+data:
+  jenkins.yaml: |
+    jenkins:
+      systemMessage: "Jenkins on Huawei Cloud CCE"
+      numExecutors: 0
+      mode: EXCLUSIVE
+      securityRealm:
+        local:
+          allowsSignup: false
+          users:
+            - id: "admin"
+              password: "TestPass123"
+      authorizationStrategy:
+        globalMatrix:
+          permissions:
+            - "Overall/Administer:admin"
+            - "Overall/Read:authenticated"
+      clouds:
+        - kubernetes:
+            name: "cce-kubernetes"
+            serverUrl: "https://kubernetes.default.svc"
+            namespace: "jenkins"
+            jenkinsUrl: "http://jenkins-ui.jenkins.svc.cluster.local:80"
+            jenkinsTunnel: "jenkins-agent.jenkins.svc.cluster.local:50000"
+            connectTimeout: 5
+            readTimeout: 15
+            maxRequestsPerHost: 32
+            retentionTimeout: 5
+            waitForPodSec: 600
+            templates:
+              - name: "kubernetes-agent"
+                namespace: "jenkins"
+                label: "kubernetes-agent"
+                nodeUsageMode: NORMAL
+                containers:
+                  - name: "jnlp"
+                    image: "jenkins/inbound-agent:latest"
+                    args: "^${computer.jnlpmac} ^${computer.name}"
+                    resourceRequestCpu: "500m"
+                    resourceRequestMemory: "1Gi"
+                    resourceLimitCpu: "500m"
+                    resourceLimitMemory: "1Gi"
+                workspaceVolume:
+                  emptyDirWorkspaceVolume:
+                    memory: false
+                idleMinutes: 10
+                activeDeadlineSeconds: 1200
+                showRawYaml: false
+  plugins.txt: |
+$(sed 's/^/    /' ./../src/docker/files/plugins.txt 2>/dev/null || echo "    jenkins-kubernetes-plugin")

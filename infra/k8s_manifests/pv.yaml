@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jenkins-home-pv
+spec:
+  capacity:
+    storage: 500Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 10.0.1.2:/
+    path: "/"
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs
